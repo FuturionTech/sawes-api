@@ -1,0 +1,90 @@
+# =============================================================================
+# SMS SERVICE - GraphQL Schema
+# Handle SMS operations through Aqilas or Twilio providers
+# =============================================================================
+
+# Input Types
+input SendSmsInput {
+    # Phone number to send SMS to (E.164 format recommended: +22670000000)
+    to: String! @rules(apply: ["required", "string"])
+
+    # Message content
+    message: String! @rules(apply: ["required", "string", "max:1600"])
+
+    # Sender ID/name (optional, uses default if not provided)
+    from: String @rules(apply: ["string", "max:11"])
+
+    # Optional: specify provider (AQILAS or TWILIO)
+    # If not provided, uses the default provider from config
+    provider: SmsProvider
+
+    # Optional: Schedule SMS for future delivery (ISO 8601 format)
+    send_at: DateTime
+}
+
+# Response Types
+type SmsResponse {
+    success: Boolean!
+    message: String!
+    message_id: String
+    provider: SmsProvider!
+    status: String
+    cost: Float
+    currency: String
+    bulk_id: String
+}
+
+type SmsStatusResponse {
+    success: Boolean!
+    message_id: String!
+    provider: SmsProvider!
+    status: String!
+    error_code: String
+    error_message: String
+    date_sent: DateTime
+    to: String
+    from: String
+    price: Float
+    price_unit: String
+}
+
+type SmsBalanceResponse {
+    success: Boolean!
+    provider: SmsProvider!
+    balance: Float!
+    currency: String
+}
+
+type SmsProviderInfoResponse {
+    current_provider: SmsProvider!
+    available_providers: [SmsProvider!]!
+    aqilas_configured: Boolean!
+    twilio_configured: Boolean!
+}
+
+# Extend root types
+extend type Query {
+    # Get SMS provider information
+    smsProviderInfo: SmsProviderInfoResponse!
+        @field(resolver: "App\\GraphQL\\Queries\\SmsQueries@providerInfo")
+
+    # Get account balance for current SMS provider
+    smsBalance(
+        # Optional: specify provider to check balance for
+        provider: SmsProvider
+    ): SmsBalanceResponse!
+        @field(resolver: "App\\GraphQL\\Queries\\SmsQueries@balance")
+
+    # Get SMS delivery status
+    smsStatus(
+        message_id: String! @rules(apply: ["required", "string"])
+        provider: SmsProvider
+    ): SmsStatusResponse!
+        @field(resolver: "App\\GraphQL\\Queries\\SmsQueries@status")
+}
+
+extend type Mutation {
+    # Send SMS message
+    sendSms(input: SendSmsInput!): SmsResponse!
+        @field(resolver: "App\\GraphQL\\Mutations\\SmsMutations@send")
+}

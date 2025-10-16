@@ -1,0 +1,4 @@
+enum SmsProvider {
+    AQILAS @enum(value: "aqilas")
+    TWILIO @enum(value: "twilio")
+}
